@@ -1,0 +1,60 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Authors>Amplified Technology</Authors>
+    <Company>Amplified Technology</Company>
+    <PackageId>Amplified.Technology.Avro.CodeGenerator</PackageId>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <Description>This package will install the necessary tooling to build C# classes from .avro files.</Description>
+    <PackageProjectUrl>https://github.com/AmplifiedTechnology/Avro.CodeGenerator</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/AmplifiedTechnology/Avro.CodeGenerator</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageVersion>0.0.22</PackageVersion>
+    <PackageTags>dotnet,avro,kakfa,avrogen</PackageTags>
+    
+    <GetTargetPathDependsOn>$(GetTargetPathDependsOn);GetDependencyTargetPaths</GetTargetPathDependsOn>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <!-- Generates a package at build -->
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <!-- Do not include the generator as a lib dependency -->
+    <Title>Avro Code Generator</Title>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Apache.Avro" Version="1.11.1" GeneratePathProperty="true" />
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="7.0.0" PrivateAssets="all" GeneratePathProperty="true" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.4.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.2" PrivateAssets="all" GeneratePathProperty="true" />
+    <PackageReference Include="System.CodeDom" Version="7.0.0" PrivateAssets="all" GeneratePathProperty="true" />
+    <PackageReference Include="System.Text.Encodings.Web" Version="7.0.0" PrivateAssets="all" GeneratePathProperty="true" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AdditionalFiles Include="AnalyzerReleases.Shipped.md" />
+    <AdditionalFiles Include="AnalyzerReleases.Unshipped.md" />
+    <None Include="README.md" Pack="true" PackagePath="\" />
+
+    <CompilerVisibleProperty Include="Avro_CodeGenerator_EnableLogging" />
+
+    <None Remove="bin\Debug\netstandard2.0\\Avro.CodeGenerator.dll" />
+
+    <InternalsVisibleTo Include="$(AssemblyName).Tests" />
+  </ItemGroup>
+
+  <Target Name="GetDependencyTargetPaths" AfterTargets="ResolvePackageDependenciesForBuild">
+    <ItemGroup>
+      <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+
+      <!-- Package the Apache.Avro dependencies alongside the generator assembly -->
+      <None Include="$(PkgApache_Avro)\lib\netstandard2.0\*.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+      <None Include="$(PkgNewtonsoft_Json)\lib\netstandard2.0\*.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+      <None Include="$(PkgSystem_CodeDom)\lib\netstandard2.0\*.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+      <None Include="$(PkgSystem_Text_Json)\lib\netstandard2.0\*.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+      <None Include="$(PkgMicrosoft_Bcl_AsyncInterfaces)\lib\netstandard2.0\*.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+      <None Include="$(PkgSystem_Text_Encodings_Web)\lib\netstandard2.0\*.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+    </ItemGroup>
+  </Target>
+
+</Project>
