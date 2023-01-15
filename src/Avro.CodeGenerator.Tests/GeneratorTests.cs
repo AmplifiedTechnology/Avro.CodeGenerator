@@ -1,12 +1,11 @@
 ﻿using CodeGenerator;
 using FluentAssertions;
 using FluentAssertions.Execution;
-using Newtonsoft.Json.Bson;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Moq;
+using System.Collections.Immutable;
+using System.Reflection;
 using Xunit;
 
 namespace Avro.CodeGenerator.Tests
@@ -24,7 +23,7 @@ namespace Avro.CodeGenerator.Tests
 
             var codeNamespace = AvroGenerator.GetCodeNamespace(testBaseNamespace, testFolderPath);
 
-            using(var assertionScope = new AssertionScope())
+            using (var assertionScope = new AssertionScope())
             {
                 codeNamespace.Should().Be(expectedCodeNamespace);
             }
@@ -95,6 +94,113 @@ namespace Avro.CodeGenerator.Tests
             new AvroGenerator().Initialize(testGeneratorInitializationContext);
 
             Assert.True(true);
+        }
+
+        [Fact]
+        public void AvroGeneratorExecuteProcessesAvroFile()
+        {
+            var path = "testSchema.avro";
+            var testSchemaNamespace = "compilation";
+            var testSchemaClass = "TestSchema";
+
+            Action<string, string> processFunction = (path, avroClass) =>
+            {
+                using (var assertionScope = new AssertionScope())
+                {
+                    path.Should().Be($"{path}.g.cs");
+                    avroClass.Should().Contain($"class {testSchemaClass}");
+                    avroClass.Should().Contain($"namespace {testSchemaNamespace}");
+                }
+            };
+
+            var inputCompilation = CreateCompilation(GetTestCompilationSource());
+
+            AvroGenerator.ProcessAvroGenResult = processFunction;
+
+            var generator = new AvroGenerator();
+
+            var driver = CSharpGeneratorDriver
+                .Create(generator)
+                .AddAdditionalTexts(ImmutableArray.Create<AdditionalText>(new SchemaAdditionalText(path)));
+
+            driver = driver.RunGeneratorsAndUpdateCompilation(inputCompilation, out var outputCompilation, out var diagnostics);
+
+            Mock.VerifyAll();
+        }
+
+        [Fact]
+        public void AvroGeneratorExecuteProcessesAvroFileWithFolderNamespace()
+        {
+            var path = "TestNamespace/testSchema.avro";
+            var testSchemaNamespace = "compilation.TestNamespace";
+            var testSchemaClass = "TestSchema";
+
+            Action<string, string> processFunction = (path, avroClass) =>
+            {
+                using (var assertionScope = new AssertionScope())
+                {
+                    path.Should().Be($"{path}.g.cs");
+                    avroClass.Should().Contain($"class {testSchemaClass}");
+                    avroClass.Should().Contain($"namespace {testSchemaNamespace}");
+                }
+            };
+
+            var inputCompilation = CreateCompilation(GetTestCompilationSource(), testSchemaNamespace);
+
+            AvroGenerator.ProcessAvroGenResult = processFunction;
+
+            var generator = new AvroGenerator();
+
+            var driver = CSharpGeneratorDriver
+                .Create(generator)
+                .AddAdditionalTexts(ImmutableArray.Create<AdditionalText>(new SchemaAdditionalText(path)));
+
+            driver = driver.RunGeneratorsAndUpdateCompilation(inputCompilation, out var outputCompilation, out var diagnostics);
+
+            Mock.VerifyAll();
+        }
+
+        [Fact]
+        public void AvroGeneratorExecuteShouldNotProcessesAvroFileWhenGeneratedFileExists()
+        {
+            var path = "testSchema.exists.avro";
+
+            Action<string, string> processFunction = (path, avroClass) => { throw new Exception($"test failed to recognized existing file {path}.g.cs"); };
+
+            var inputCompilation = CreateCompilation(GetTestCompilationSource());
+
+            AvroGenerator.ProcessAvroGenResult = processFunction;
+
+            var generator = new AvroGenerator();
+
+            var driver = CSharpGeneratorDriver
+                .Create(generator)
+                .AddAdditionalTexts(ImmutableArray.Create<AdditionalText>(new SchemaAdditionalText(path)));
+
+            driver = driver.RunGeneratorsAndUpdateCompilation(inputCompilation, out var outputCompilation, out var diagnostics);
+
+            Mock.VerifyAll();
+        }
+
+        private static Compilation CreateCompilation(string source, string assemblyName = "compilation")
+            => CSharpCompilation.Create(assemblyName,
+                new[] { CSharpSyntaxTree.ParseText(source) },
+                new[] { MetadataReference.CreateFromFile(typeof(Binder).GetTypeInfo().Assembly.Location) },
+                new CSharpCompilationOptions(OutputKind.ConsoleApplication));
+
+        private static string GetTestCompilationSource()
+        {
+            return
+@"
+namespace MyCode
+{
+    public class Program
+    {
+        public static void Main(string[] args)
+        {
+        }
+    }
+}";
         }
     }
 }
