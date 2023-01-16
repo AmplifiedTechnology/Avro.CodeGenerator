@@ -19,7 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Amplified.Technology.Avro.CodeGenerator" Version="0.0.22" />
+    <PackageReference Include="Amplified.Technology.Avro.CodeGenerator" Version="0.0.23" />
   </ItemGroup>
 
 </Project>
